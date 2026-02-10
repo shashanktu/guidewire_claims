@@ -27,7 +27,7 @@ def read_root():
       "jurisdiction": "CA",
       "insured": {
         "insuredId": "INS-102345",
-        "name": "Shashank Tudum"
+        "name": "Tudum Venkanna"
       },
       "claimant": {
         "claimantId": "CLMT-334589",
