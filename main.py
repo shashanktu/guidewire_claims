@@ -17,7 +17,7 @@ def read_root():
   "count": 5,
   "claims": [
     {
-      "claimNumber": "CLM-2025-001245",
+      "claimNumber": "CLM-2025-00123456",
       "policyNumber": "PLC-AUTO-458912",
       "lineOfBusiness": "Auto",
       "lossDate": "2025-01-12",
@@ -27,7 +27,7 @@ def read_root():
       "jurisdiction": "CA",
       "insured": {
         "insuredId": "INS-102345",
-        "name": "John D. Miller"
+        "name": "Shashank Tudum"
       },
       "claimant": {
         "claimantId": "CLMT-334589",
