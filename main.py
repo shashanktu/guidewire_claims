@@ -72,7 +72,7 @@ def read_root():
       "jurisdiction": "TX",
       "insured": {
         "insuredId": "INS-778912",
-        "name": "Apex Logistics Inc."
+        "name": "Tudum Shashank"
       },
       "claimant": {
         "claimantId": "CLMT-221908",
