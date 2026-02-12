@@ -11,11 +11,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/get_records")
-def read_root():
-    sample={
-  "count": 5,
-  "claims": [
+claims_data = [
     {
       "claimNumber": "CLM-2025-00123456",
       "policyNumber": "PLC-AUTO-458912",
@@ -237,7 +233,28 @@ def read_root():
         }
       ]
     }
-  ]
-}
+]
 
-    return sample
+@app.get("/get_records")
+def read_root():
+    return {"count": len(claims_data), "claims": claims_data}
+
+@app.get("/claim/CLM-2025-00123456")
+def get_claim_1():
+    return claims_data[0]
+
+@app.get("/claim/CLM-2025-001312")
+def get_claim_2():
+    return claims_data[1]
+
+@app.get("/claim/CLM-2025-001388")
+def get_claim_3():
+    return claims_data[2]
+
+@app.get("/claim/CLM-2025-001447")
+def get_claim_4():
+    return claims_data[3]
+
+@app.get("/claim/CLM-2025-001509")
+def get_claim_5():
+    return claims_data[4]
