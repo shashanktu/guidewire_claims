@@ -249,3 +249,9 @@ def get_claim_by_number(claim_number: str):
         if claim["claimNumber"] == claim_number:
             return claim
     return {"error": "Claim not found"}
+
+@app.get("/applications/")
+def get_applications(): 
+  return {"applications": ["RSS Feed", "Guidewire ClaimCenter", "Guidewire BillingCenter"]}
+
+
