@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import json
 
-app = FastAPI()
+app = FastAPI(title="Guidewire Claims API")
 
 app.add_middleware(
     CORSMiddleware,
