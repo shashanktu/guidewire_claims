@@ -66,14 +66,17 @@ def update_claim_status(claim_number: str, payload: StatusUpdateRequest):
             detail=f"Invalid status '{payload.claimStatus}'. Valid statuses are: {sorted(VALID_STATUSES)}",
         )
 
-    for claim in claims_data:
-        if claim["claimNumber"] == claim_number:
-            claim["claimStatus"] = payload.claimStatus
-            with open("claims_data.json", "w") as f:
-                json.dump(claims_data, f, indent=2)
+    try:
+        for claim in claims_data:
+            if claim["claimNumber"] == claim_number:
+                claim["claimStatus"] = payload.claimStatus
+                with open("claims_data.json", "w") as f:
+                    json.dump(claims_data, f, indent=2)
             return claim
 
-    raise HTTPException(status_code=404, detail=f"Claim '{claim_number}' not found")
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred while updating the claim status: {e}")
 
 @app.get("/applications/")
 def get_applications(): 
