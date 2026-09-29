@@ -8,7 +8,7 @@ import pandas as pd
 try:
     API_BASE_URL = st.secrets["API_BASE_URL"]
 except Exception:
-    API_BASE_URL = "https://guidewire-claims.vercel.app"
+    API_BASE_URL = "http://127.0.0.1:8000"
 
 st.set_page_config(
     page_title="Guidewire Claims Dashboard",
@@ -224,6 +224,10 @@ def render_claims_list():
     except Exception as e:
         st.error(f"Could not connect to API at `{API_BASE_URL}`. Error: {e}")
         st.info("Make sure the FastAPI server is running (e.g. `uvicorn main:app --reload`).")
+        return
+
+    if not claims:
+        st.warning("No claims found. If this is a fresh database, seed it first by calling the `/admin/seed` endpoint.")
         return
 
     df = pd.DataFrame(
