@@ -76,6 +76,7 @@ def update_claim_status(claim_number: str, payload: StatusUpdateRequest):
 
         
     except Exception as e:
+        print(f"Error updating claim status: {e}")
         raise HTTPException(status_code=500, detail=f"An error occurred while updating the claim status: {e}")
 
 @app.get("/applications/")
