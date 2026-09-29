@@ -25,7 +25,7 @@ load_dotenv()
 # Retool DB connection string. Get this from Retool -> Resources -> your
 # Retool DB -> "Connection details" (use the PostgreSQL connection string).
 # Example: postgresql://retool:password@host.retooldb.com:5432/retool
-DATABASE_URL = os.getenv("RETOOL_DB_URL") or os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("RETOOL_DB_URL")
 
 if not DATABASE_URL:
     raise RuntimeError(
