@@ -1,9 +1,7 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
-
-from db import init_db, get_session, seed_from_json, Claim
+import json
 
 app = FastAPI(title="Guidewire Claims API")
 
@@ -15,6 +13,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+DATA_FILE = "claims_data.json"
+
 VALID_STATUSES = {"Open", "InReview", "Approved", "Closed", "Denied"}
 
 
@@ -22,71 +22,53 @@ class StatusUpdateRequest(BaseModel):
     claimStatus: str
 
 
-@app.on_event("startup")
-def on_startup():
-    # Create the claims table if it does not already exist.
-    init_db()
+def load_claims():
+    with open(DATA_FILE, "r") as f:
+        return json.load(f)
 
 
-@app.post("/admin/seed")
-def seed_database():
-    """
-    One-time (idempotent) utility to load claims_data.json into the
-    Retool DB `claims` table. Safe to call multiple times; existing
-    claim numbers are skipped.
-    """
-    try:
-        result = seed_from_json("claims_data.json")
-        return {"status": "ok", **result}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Seeding failed: {e}")
+def save_claims(claims):
+    with open(DATA_FILE, "w") as f:
+        json.dump(claims, f, indent=2)
 
 
 @app.get("/get_records")
-def read_root(db: Session = Depends(get_session)):
-    claims = db.query(Claim).all()
-    return {"count": len(claims), "claims": [c.to_dict() for c in claims]}
+def read_root():
+    claims = load_claims()
+    return {"count": len(claims), "claims": claims}
 
 @app.get("/claim_numbers")
-def get_claim_numbers(db: Session = Depends(get_session)):
-    claims = db.query(Claim.claimNumber, Claim.policyNumber, Claim.claimStatus).all()
+def get_claim_numbers():
+    claims = load_claims()
     return [
-        {"claimNumber": c.claimNumber, "policyNumber": c.policyNumber, "claimStatus": c.claimStatus}
+        {"claimNumber": c["claimNumber"], "policyNumber": c["policyNumber"], "claimStatus": c["claimStatus"]}
         for c in claims
     ]
 
 @app.get("/claim/{claim_number}")
-def get_claim_by_number(claim_number: str, db: Session = Depends(get_session)):
-    claim = db.query(Claim).filter(Claim.claimNumber == claim_number).first()
-    if not claim:
-        return {"error": "Claim not found"}
-    return claim.to_dict()
+def get_claim_by_number(claim_number: str):
+    claims = load_claims()
+    for claim in claims:
+        if claim["claimNumber"] == claim_number:
+            return claim
+    return {"error": "Claim not found"}
 
 @app.put("/claim/{claim_number}/status")
-def update_claim_status(
-    claim_number: str, payload: StatusUpdateRequest, db: Session = Depends(get_session)
-):
+def update_claim_status(claim_number: str, payload: StatusUpdateRequest):
     if payload.claimStatus not in VALID_STATUSES:
         raise HTTPException(
             status_code=400,
             detail=f"Invalid status '{payload.claimStatus}'. Valid statuses are: {sorted(VALID_STATUSES)}",
         )
 
-    try:
-        claim = db.query(Claim).filter(Claim.claimNumber == claim_number).first()
-        if not claim:
-            raise HTTPException(status_code=404, detail=f"Claim '{claim_number}' not found")
+    claims = load_claims()
+    for claim in claims:
+        if claim["claimNumber"] == claim_number:
+            claim["claimStatus"] = payload.claimStatus
+            save_claims(claims)
+            return claim
 
-        claim.claimStatus = payload.claimStatus
-        db.commit()
-        db.refresh(claim)
-        return claim.to_dict()
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        print(f"Error updating claim status: {e}")
-        raise HTTPException(status_code=500, detail=f"An error occurred while updating the claim status: {e}")
+    raise HTTPException(status_code=404, detail=f"Claim '{claim_number}' not found")
 
 @app.get("/applications/")
 def get_applications(): 

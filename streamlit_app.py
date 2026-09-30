@@ -1,14 +1,12 @@
 import streamlit as st
-import requests
+import json
+import os
 import pandas as pd
 
 # ----------------------------------------------------------------------------
 # Configuration
 # ----------------------------------------------------------------------------
-try:
-    API_BASE_URL = st.secrets["API_BASE_URL"]
-except Exception:
-    API_BASE_URL = "https://guidewire-claims.vercel.app"
+DATA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "claims_data.json")
 
 st.set_page_config(
     page_title="Guidewire Claims Dashboard",
@@ -64,30 +62,41 @@ def status_badge(status: str) -> str:
 
 
 # ----------------------------------------------------------------------------
-# API helpers
+# Data helpers (read/write claims_data.json directly)
 # ----------------------------------------------------------------------------
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=5)
 def fetch_all_claims():
-    resp = requests.get(f"{API_BASE_URL}/get_records", timeout=10)
-    resp.raise_for_status()
-    return resp.json()["claims"]
+    with open(DATA_FILE, "r") as f:
+        return json.load(f)
 
 
-@st.cache_data(ttl=60)
 def fetch_claim(claim_number: str):
-    resp = requests.get(f"{API_BASE_URL}/claim/{claim_number}", timeout=10)
-    resp.raise_for_status()
-    return resp.json()
+    claims = fetch_all_claims()
+    for claim in claims:
+        if claim["claimNumber"] == claim_number:
+            return claim
+    return None
 
 
 def update_claim_status(claim_number: str, new_status: str):
-    resp = requests.put(
-        f"{API_BASE_URL}/claim/{claim_number}/status",
-        json={"claimStatus": new_status},
-        timeout=10,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    with open(DATA_FILE, "r") as f:
+        claims = json.load(f)
+
+    updated = None
+    for claim in claims:
+        if claim["claimNumber"] == claim_number:
+            claim["claimStatus"] = new_status
+            updated = claim
+            break
+
+    if updated is None:
+        raise ValueError(f"Claim '{claim_number}' not found")
+
+    with open(DATA_FILE, "w") as f:
+        json.dump(claims, f, indent=2)
+
+    return updated
+
 
 
 # ----------------------------------------------------------------------------
@@ -200,7 +209,6 @@ def render_claim_detail(claim_number: str):
                 if new_status != current_status:
                     try:
                         update_claim_status(claim_number, new_status)
-                        fetch_claim.clear()
                         fetch_all_claims.clear()
                         st.success(f"Status updated to '{new_status}'")
                         st.rerun()
@@ -222,8 +230,7 @@ def render_claims_list():
     try:
         claims = fetch_all_claims()
     except Exception as e:
-        st.error(f"Could not connect to API at `{API_BASE_URL}`. Error: {e}")
-        st.info("Make sure the FastAPI server is running (e.g. `uvicorn main:app --reload`).")
+        st.error(f"Could not load claims data from `{DATA_FILE}`. Error: {e}")
         return
 
     if not claims:
@@ -301,13 +308,12 @@ def render_claims_list():
 # ----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("### Settings")
-    st.text_input("API Base URL", value=API_BASE_URL, key="api_base_url_display", disabled=True)
+    st.text_input("Data File", value=DATA_FILE, key="data_file_display", disabled=True)
     if st.button("Refresh Data"):
         fetch_all_claims.clear()
-        fetch_claim.clear()
         st.rerun()
     st.markdown("---")
-    st.markdown("Built with **Streamlit** + **FastAPI**")
+    st.markdown("Built with **Streamlit**")
 
 # ----------------------------------------------------------------------------
 # Router
